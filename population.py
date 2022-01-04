@@ -1,8 +1,15 @@
-
 from random import random, getrandbits
 
 
-class Person:
+class Population:
+
+    size = 0
+    population = []
+    sex = []
+    gt = []
+    pt = []
+    rhesusGt = []
+    rhesusPt = []
 
     def __init__(self,
                  genotype=('O', 'O'),

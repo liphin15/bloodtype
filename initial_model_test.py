@@ -33,9 +33,8 @@ if __name__ == '__main__':
 
     # model.save()
 
-
-    # model.plot_sex()
-    # model.plot_sex(ratio=True)
-    model.plot_phenotype()
-    model.plot_phenotype(ratio=True)
+    # model.plotSex()
+    # model.plotSex(ratio=True)
+    model.plotPhenotype()
+    model.plotPhenotype(ratio=True)
     ipdb.set_trace()

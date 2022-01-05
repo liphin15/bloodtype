@@ -39,18 +39,18 @@ class Person:
     def genMutatedOffspring(self,
                             otherPerson,
                             bt_gtMutation=None,
-                            rfbt_gtMutation=None):
+                            rf_gtMutation=None):
 
         child = self.genOffspring(otherPerson=otherPerson)
 
         if bt_gtMutation is not None:
-            child.mutateGenome(mutateTo=bt_gtMutation)
-        if rfbt_gtMutation is not None:
-            child.mutateRfGenome(mutateTo=rfbt_gtMutation)
+            child.mutateBtGenome(mutateTo=bt_gtMutation)
+        if rf_gtMutation is not None:
+            child.mutateRfGenome(mutateTo=rf_gtMutation)
 
         return child
 
-    def mutateGenome(self, mutateTo):
+    def mutateBtGenome(self, mutateTo):
         self.bt_gt = (self.bt_gt[0], mutateTo) if bool(
             getrandbits(1)) else (mutateTo, self.bt_gt[1])
         self.setbt_pt()

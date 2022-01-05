@@ -5,60 +5,60 @@ from random import random, getrandbits
 class Person:
 
     def __init__(self,
-                 genotype=('O', 'O'),
-                 rf_genotype=('+', '+'),
+                 bt_gt=('O', 'O'),
+                 rf_gt=('+', '+'),
                  sex=None,
                  fitness=None,
                  offspringProb=0.055
                  ):
 
-        self.genotype = genotype
-        self.rf_genotype = rf_genotype
+        self.bt_gt = bt_gt
+        self.rf_gt = rf_gt
 
         if sex in ['f', 'm']:
             self.sex = sex
         else:
             self.sex = 'f' if random() < 0.5 else 'm'
 
-        self.setPhenotype()
-        self.setRfPhenotype()
+        self.setbt_pt()
+        self.setRfbt_pt()
 
-        self.setFitness(fitness)  # dependent on phenotype
+        self.setFitness(fitness)  # dependent on bt_pt
         self.setOffspringProb(offspringProb)
 
     def genOffspring(self, otherPerson):
-        child_genotype = (self.genotype[getrandbits(
-            1)], otherPerson.genotype[getrandbits(1)])
-        child_rf_genotype = (self.rf_genotype[getrandbits(
-            1)], otherPerson.rf_genotype[getrandbits(1)])
+        child_bt_gt = (self.bt_gt[getrandbits(
+            1)], otherPerson.bt_gt[getrandbits(1)])
+        child_rf_gt = (self.rf_gt[getrandbits(
+            1)], otherPerson.rf_gt[getrandbits(1)])
 
-        child = Person(genotype=child_genotype, rf_genotype=child_rf_genotype)
+        child = Person(bt_gt=child_bt_gt, rf_gt=child_rf_gt)
 
         return child
 
     def genMutatedOffspring(self,
                             otherPerson,
-                            genotypeMutation=None,
-                            rfGenotypeMutation=None):
+                            bt_gtMutation=None,
+                            rfbt_gtMutation=None):
 
         child = self.genOffspring(otherPerson=otherPerson)
 
-        if genotypeMutation is not None:
-            child.mutateGenome(mutateTo=genotypeMutation)
-        if rfGenotypeMutation is not None:
-            child.mutateRfGenome(mutateTo=rfGenotypeMutation)
+        if bt_gtMutation is not None:
+            child.mutateGenome(mutateTo=bt_gtMutation)
+        if rfbt_gtMutation is not None:
+            child.mutateRfGenome(mutateTo=rfbt_gtMutation)
 
         return child
 
     def mutateGenome(self, mutateTo):
-        self.genotype = (self.genotype[0], mutateTo) if bool(
-            getrandbits(1)) else (mutateTo, self.genotype[1])
-        self.setPhenotype()
+        self.bt_gt = (self.bt_gt[0], mutateTo) if bool(
+            getrandbits(1)) else (mutateTo, self.bt_gt[1])
+        self.setbt_pt()
 
     def mutateRfGenome(self, mutateTo):
-        self.rf_genotype = (self.rf_genotype[0], mutateTo) if bool(
-            getrandbits(1)) else (mutateTo, self.rf_genotype[1])
-        self.setRfPhenotype()
+        self.rf_gt = (self.rf_gt[0], mutateTo) if bool(
+            getrandbits(1)) else (mutateTo, self.rf_gt[1])
+        self.setRfbt_pt()
 
     def dies(self):
         return True if random() < self.fitness else False
@@ -68,43 +68,43 @@ class Person:
         if value is not None:
             self.fitness = value
         else:
-            if self.phenotype == 'O':
+            if self.bt_pt == 'O':
                 self.fitness = fitness
-            elif self.phenotype == 'A':
+            elif self.bt_pt == 'A':
                 self.fitness = fitness / 2
-            elif self.phenotype == 'B':
+            elif self.bt_pt == 'B':
                 self.fitness = fitness * 2
-            elif self.phenotype == 'AB':
+            elif self.bt_pt == 'AB':
                 self.fitness = fitness / 4
 
     def setOffspringProb(self, value=None):
         if value is not None:
             self.offspringProb = value
         else:
-            pass  # implement phenotype dependend die probability
+            pass  # implement bt_pt dependend die probability
 
     def possibleOffspring(self):
         return True if random() < self.offspringProb else False
 
-    def setPhenotype(self):
-        if self.genotype == ('O', 'O'):
-            self.phenotype = 'O'
-        elif self.genotype == ('A', 'A') or \
-                self.genotype == ('A', 'O') or \
-                self.genotype == ('O', 'A'):
-            self.phenotype = 'A'
-        elif self.genotype == ('B', 'B') or \
-                self.genotype == ('B', 'O') or \
-                self.genotype == ('O', 'B'):
-            self.phenotype = 'B'
-        elif self.genotype == ('A', 'B') or \
-                self.genotype == ('B', 'A'):
-            self.phenotype = 'AB'
+    def setbt_pt(self):
+        if self.bt_gt == ('O', 'O'):
+            self.bt_pt = 'O'
+        elif self.bt_gt == ('A', 'A') or \
+                self.bt_gt == ('A', 'O') or \
+                self.bt_gt == ('O', 'A'):
+            self.bt_pt = 'A'
+        elif self.bt_gt == ('B', 'B') or \
+                self.bt_gt == ('B', 'O') or \
+                self.bt_gt == ('O', 'B'):
+            self.bt_pt = 'B'
+        elif self.bt_gt == ('A', 'B') or \
+                self.bt_gt == ('B', 'A'):
+            self.bt_pt = 'AB'
 
-    def setRfPhenotype(self):
-        if self.rf_genotype == ('+', '+') or \
-           self.rf_genotype == ('-', '+') or \
-           self.rf_genotype == ('+', '-'):
-            self.rf_phenotype = '+'
-        else:  # self.rf_genotype == ('-', '-'):
-            self.rf_phenotype = '-'
+    def setRfbt_pt(self):
+        if self.rf_gt == ('+', '+') or \
+           self.rf_gt == ('-', '+') or \
+           self.rf_gt == ('+', '-'):
+            self.rf_pt = '+'
+        else:  # self.rf_gt == ('-', '-'):
+            self.rf_pt = '-'

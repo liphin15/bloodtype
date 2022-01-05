@@ -27,8 +27,7 @@ class Person:
         self.setOffspringProb(offspringProb)
 
     def genOffspring(self, otherPerson):
-        child_bt_gt = (self.bt_gt[getrandbits(
-            1)], otherPerson.bt_gt[getrandbits(1)])
+        child_bt_gt = (self.bt_gt[getrandbits(1)], otherPerson.bt_gt[getrandbits(1)])
         child_rf_gt = (self.rf_gt[getrandbits(
             1)], otherPerson.rf_gt[getrandbits(1)])
 

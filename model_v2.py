@@ -32,7 +32,7 @@ model.setFitness(fitness = {
         'B': 20,
         'AB': 20
     })
-model.setDeathRate(value=0.5)
+model.setDeathRate(value=0.2)
 
 for i in tqdm(range(200)):
     model.step()

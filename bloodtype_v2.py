@@ -103,14 +103,15 @@ class BloodType:
         return deathlist
 
     def killPersons(self):
-        deathlist = self.getDeathlist().sort(reverse=True)
+        deathlist = self.getDeathlist()
+        deathlist.sort(reverse=True)
         if deathlist is not None:
             for i in deathlist:
                 self.removePerson(i)
 
-    def removePerson(self, i_person):
-        self.population.pop(i_person)
-        self.populationsize -= 1
+    def removePerson(self, i):
+        self.population.pop(i)
+        self.populationsize = self.populationsize - 1
 
     def generateOffsprings(self, bt_mutation=None, mutations = 0):
         self.births = int(np.ceil(self.populationsize*self.getBirthRate()))
@@ -123,13 +124,13 @@ class BloodType:
             i, j = self.choseParents()
             child = self.population[i].genMutatedOffspring(self.population[j],bt_gtMutation=bt_mutation)           
             self.population.append(child)
-            self.populationsize += 1
+            self.populationsize = self.populationsize + 1
 
         for i in range(self.births-mutations):
             i, j = self.choseParents()
             child = self.population[i].genOffspring(self.population[j])
             self.population.append(child)
-            self.populationsize += 1
+            self.populationsize = self.populationsize + 1
 
     def generateOffspring(self):
         i = random.randint(0, self.populationsize - 1)
@@ -151,11 +152,12 @@ class BloodType:
         sexs = np.unique([i.sex for i in self.population],
                          return_counts=True)[1]
         currentstate = [self.timesteps,
-                        self.populationsize,
+                        len(self.population), # self.populationsize,
                         self.deaths,
                         self.births,
                         sexs,
-                        phenoptypeCounts]
+                        phenoptypeCounts
+                       ]
 
         self.states.append(currentstate)
 
@@ -172,8 +174,8 @@ class BloodType:
         # x = np.arange(0, self.timesteps, step=self.timestep)
         x = np.array([state[0] for state in self.states])
         y = np.array([state[1] for state in self.states])
-        d = np.cumsum([state[2] for state in self.states])
-        b = np.cumsum([state[3] for state in self.states])
+        d = np.array([state[2] for state in self.states])
+        b = np.array([state[3] for state in self.states])
         
         # import ipdb; ipdb.set_trace()
         fig, ax = plt.subplots()
@@ -219,7 +221,7 @@ class BloodType:
         plt.show()
 
     def printState(self):
-        print("step: {:3.2f}".format(np.sum([s[0] for s in self.states])),
+        print("step: {:3.2f}".format(self.states[-1][0]),
               self.states[-1][1:]
               )
 

@@ -17,28 +17,29 @@ for i in tqdm(range(100)):
     model.step()
 model.printState()
 
-for i in tqdm(range(10)):
+for i in tqdm(range(100)):
     model.step(bt_mutation='A', mutations=10)
     model.step(bt_mutation='B', mutations=10)
+
 model.printState()
 
-for i in tqdm(range(1000)):
+for i in tqdm(range(100)):
     model.step()
 model.printState()
 
-model.setFitness(fitness = {
-        'O': 10,
+model.setFitness(fitness={
+        'O': 100,
         'A': 1,
-        'B': 20,
+        'B': 5,
         'AB': 20
     })
-model.setDeathRate(value=0.2)
+model.setDeathRate(value=0.8)
 
-for i in tqdm(range(200)):
+for i in tqdm(range(36)):
     model.step()
 model.printState()
 
-model.setFitness(fitness = {
+model.setFitness(fitness={
         'O': 1,
         'A': 1,
         'B': 1,
@@ -47,14 +48,14 @@ model.setFitness(fitness = {
 model.setDeathRate(value=0.01)
 
 
-for i in tqdm(range(1000)):
+for i in tqdm(range(5000)):
     model.step()
-    if i % 50 ==0:
-        model.printState()
 model.printState()
+
 
 # model.plotSize()
 model.plotSize()
 # model.plotSex(ratio=True)
 model.plotBtPt()
+model.plotBtPt(showRf=True)
 ipdb.set_trace()

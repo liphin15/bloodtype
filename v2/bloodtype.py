@@ -4,10 +4,23 @@ import random
 from person import Person
 import pickle
 import os
+from numba import njit, jit
 
 import ipdb
 
-default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+# default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+default_colors = ['#1f77b4',
+                  '#ff7f0e',
+                  '#2ca02c',
+                  '#d62728',
+                  '#9467bd',
+                  '#8c564b',
+                  '#e377c2',
+                  '#7f7f7f',
+                  '#bcbd22',
+                  '#17becf',
+                  '#1a55FF']
 
 
 class BloodType:
@@ -49,12 +62,14 @@ class BloodType:
     }
     filename = 'model.pkl'
     plots_dir = './plots/'
+    filename_age_penalty = 'age_penalty.csv'
+    filename_birth_distribution = 'birth_distribution.csv'
 
     def __init__(self,
                  startsize,
                  timesteptype='w',
                  deathRate=0.01,
-                 birthRate=0.013,
+                 birthRate=0.014,
                  filename='model.pkl'):
         self.states = []
         self.population = []
@@ -69,12 +84,15 @@ class BloodType:
         self.birthRate = birthRate
 
         self.setTimesteps(timesteptype)
+        self.loadAgePenalty()
+        self.loadBirthDistribution()
 
         # plt.ion()
         # self.fig, self.ax = plt.subplots(nrows=1, ncols=2)
 
         self.populationsize = startsize
-        self.population = [Person() for i in range(self.populationsize)]
+        self.population = [Person(age=20.0)
+                           for i in range(self.populationsize)]
         self.filename = filename
 
     def setFitness(self, fitness):
@@ -96,6 +114,25 @@ class BloodType:
     def getBirthRate(self):
         return self.birthRate * self.timestep
 
+    def loadAgePenalty(self):
+        self.age_penalty = np.genfromtxt(self.filename_age_penalty,
+                                         delimiter=',',
+                                         skip_header=1)
+        prop = (self.age_penalty[:, 2]
+                / np.sum(self.age_penalty[:, 2])).reshape(-1, 1)
+        self.age_penalty = np.hstack([self.age_penalty, prop])
+
+    def loadBirthDistribution(self):
+        self.birth_distribution = np.genfromtxt(self.filename_birth_distribution,
+                                                delimiter=',',
+                                                skip_header=1)
+        prop = (self.birth_distribution[:, 2]
+                / np.sum(self.birth_distribution[:, 2])).reshape(-1, 1)
+        cdf = np.cumsum(prop).reshape(-1, 1)
+        self.birth_distribution = np.hstack([self.birth_distribution,
+                                             prop,
+                                             cdf])
+
     def step(self, bt_mutation=None, rf_mutation=None, mutations=0):
         self.timesteps += self.timestep
         # Parallel(n_jobs=5)(p.updateAge(self.timestep) for p in self.population)
@@ -113,7 +150,15 @@ class BloodType:
         # self.updateSize()
 
     def getDeathlist(self):
-        cdf = np.cumsum([self.fitness[p.bt_pt] for p in self.population])
+        prop_bt = np.array([self.fitness[p.bt_pt] for p in self.population])
+
+        prop_age = np.array([self.age_penalty[((self.age_penalty[:, 0] - p.age) <= 0).sum() - 1, 3]
+                             for p in self.population])
+
+        prop = prop_bt * prop_age
+        # prop = prop / np.sum(prop)
+
+        cdf = np.cumsum(prop)
         cdf = cdf / cdf[-1]
         self.deaths = round(self.populationsize * self.getDeathRate())
 
@@ -151,6 +196,8 @@ class BloodType:
 
         for i in range(mutations):
             i, j = self.choseParents()
+            if (i, j) == (-1, -1):
+                break
             child = self.population[i].genMutatedOffspring(
                 self.population[j],
                 bt_gtMutation=bt_mutation,
@@ -160,23 +207,31 @@ class BloodType:
 
         for i in range(self.births - mutations):
             i, j = self.choseParents()
+            if (i, j) == (-1, -1):
+                break
             child = self.population[i].genOffspring(self.population[j])
             self.population.append(child)
             self.populationsize = self.populationsize + 1
 
-    def generateOffspring(self):
-        i = random.randint(0, self.populationsize - 1)
-        sexs = np.array([p.sex for p in self.population])
-        j = np.random.choice(np.arange(self.populationsize)[
-                             sexs != self.population[i].sex], 1)[0]
-        child = self.population[i].genOffspring(self.population[j])
-        return child
-
     def choseParents(self):
-        i = random.randint(0, self.populationsize - 1)
         sexs = np.array([p.sex for p in self.population])
-        j = np.random.choice(np.arange(self.populationsize)[
-                             sexs != self.population[i].sex], 1)[0]
+
+        prop_i = np.array([self.birth_distribution[(
+            (self.birth_distribution[:, 0] - p.age) <= 0).sum() - 1, 3] for p in self.population])
+        if (prop_i == 0).any():
+            return -1, -1
+        # print(prop_i, prop_i.max())
+        cdf_i = np.cumsum(prop_i)
+        cdf_i = cdf_i / cdf_i[-1]
+        i = np.sum(cdf_i - random.random() < 0)
+
+        prop_j = prop_i * (sexs != self.population[i].sex)
+        cdf_j = np.cumsum(prop_j)
+        cdf_j = cdf_j / cdf_j[-1]
+        j = np.sum(cdf_j - random.random() < 0)
+        # ipdb.set_trace()
+        # j = np.random.choice(np.arange(self.populationsize)[
+        #                      sex_age[:, 0] != self.population[i].sex], 1)[0]
         return (i, j)
 
     def logState(self):
@@ -187,8 +242,12 @@ class BloodType:
         btrf_ptFromPopulation = [p.bt_pt + p.rf_pt for p in self.population]
         btrf_ptCounts = [btrf_ptFromPopulation.count(
             p) for p in self.btrf_pt]
-        sexs = np.unique([i.sex for i in self.population],
+        sexs = np.unique([p.sex for p in self.population],
                          return_counts=True)[1]
+        ages = [self.age_penalty[(
+            (self.age_penalty[:, 0] - p.age) <= 0).sum() - 1, 0] for p in self.population]
+        age_groups = [ages.count(ag) for ag in self.age_penalty[:, 0]]
+
         currentstate = [self.timesteps,
                         len(self.population),  # self.populationsize,
                         self.deaths,
@@ -196,6 +255,7 @@ class BloodType:
                         sexs,
                         bt_ptCounts,
                         btrf_ptCounts,
+                        age_groups,
                         ]
 
         self.states.append(currentstate)
@@ -241,7 +301,8 @@ class BloodType:
         plt.legend()
         if save:
             self.checkDirectory(self.plots_dir)
-            plt.savefig(self.plots_dir+"populationsize.png")
+            plt.savefig(self.plots_dir + "populationsize.png")
+            plt.close()
         else:
             plt.show()
 
@@ -284,6 +345,7 @@ class BloodType:
             plt.savefig(self.plots_dir
                         + "bloodtype{}{}.png".format('_rf' if showRf else '',
                                                      '_ratio' if ratio else ''))
+            plt.close()
         else:
             plt.show()
 
@@ -304,6 +366,34 @@ class BloodType:
             self.checkDirectory(self.plots_dir)
             plt.savefig(self.plots_dir
                         + "sex_distribution{}.png".format('_ratio' if ratio else ''))
+            plt.close()
+        else:
+            plt.show()
+
+    def plotAgeGroups(self, ratio=False, save=False):
+        # x = np.cumsum([state[0] for state in self.states])
+        x = np.array([state[0] for state in self.states])
+        y = np.cumsum([state[7] for state in self.states], axis=1)
+        if ratio:
+            y = (y.T / y[:, -1]).T
+        # ipdb.set_trace()
+
+        fig, ax = plt.subplots()
+
+        for i in reversed(range(y.shape[1])):
+            ax.fill_between(x,
+                            y[:, i],
+                            np.zeros(y[:, 0].shape) if i == 0 else y[:, i - 1],
+                            color=default_colors[i],
+                            alpha=1,
+                            label='{}-{}'.format(int(self.age_penalty[i, 0]),
+                                                 int(self.age_penalty[i, 1])))
+        plt.legend()
+        if save:
+            self.checkDirectory(self.plots_dir)
+            plt.savefig(self.plots_dir
+                        + "age_distribution{}.png".format('_ratio' if ratio else ''))
+            plt.close()
         else:
             plt.show()
 
@@ -321,4 +411,5 @@ class BloodType:
         with open(filename, 'rb') as f:
             tmp_dict = pickle.load(f)
 
+        self.__dict__.update(tmp_dict)
         self.__dict__.update(tmp_dict)

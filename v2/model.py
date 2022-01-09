@@ -6,10 +6,13 @@ from tqdm import tqdm
 import ipdb
 
 random.seed(1234)
-model = BloodType(1000, timesteptype='m')
+model = BloodType(100,
+                  deathRate=0.01,
+                  birthRate=0.015,
+                  timesteptype='y')
 
 # iterations
-for i in tqdm(range(100)):
+for i in tqdm(range(1000)):
     model.step()
 model.printState()
 
@@ -23,28 +26,28 @@ for i in tqdm(range(100)):
     model.step()
 model.printState()
 
-model.setFitness(fitness={
-        'O': 100,
-        'A': 1,
-        'B': 5,
-        'AB': 20
-    })
-model.setDeathRate(value=0.8)
+# model.setFitness(fitness={
+#         'O': 100,
+#         'A': 1,
+#         'B': 5,
+#         'AB': 20
+#     })
+# model.setDeathRate(value=0.8)
+#
+# for i in tqdm(range(36)):
+#     model.step()
+# model.printState()
 
-for i in tqdm(range(36)):
-    model.step()
-model.printState()
-
-model.setFitness(fitness={
-        'O': 1,
-        'A': 1,
-        'B': 1,
-        'AB': 1
-    })
-model.setDeathRate(value=0.01)
+# model.setFitness(fitness={
+#         'O': 1,
+#         'A': 1,
+#         'B': 1,
+#         'AB': 1
+#     })
+# model.setDeathRate(value=0.01)
 
 
-for i in tqdm(range(5000)):
+for i in tqdm(range(1000)):
     model.step()
 model.printState()
 
@@ -54,4 +57,5 @@ model.plotSize(save=True)
 # model.plotSex(ratio=True)
 model.plotBtPt(save=True)
 model.plotBtPt(showRf=True, save=True)
-ipdb.set_trace()
+model.plotAgeGroups(ratio=False, save=True)
+# ipdb.set_trace()

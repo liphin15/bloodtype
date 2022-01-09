@@ -8,6 +8,7 @@ class Person:
                  bt_gt=('O', 'O'),
                  rf_gt=('+', '+'),
                  sex=None,
+                 age=0.0,
                  fitness=None,
                  offspringProb=0.055
                  ):
@@ -15,7 +16,7 @@ class Person:
         self.bt_gt = bt_gt
         self.rf_gt = rf_gt
 
-        self.age = 0.0
+        self.age = age
 
         if sex in ['f', 'm']:
             self.sex = sex

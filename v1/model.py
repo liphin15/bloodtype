@@ -1,11 +1,7 @@
-
-import numpy as np
-from matplotlib import pyplot as plt
 import random
-from bloodtype_v2 import BloodType
+from bloodtype import BloodType
 
 from tqdm import tqdm
-import pickle
 
 import ipdb
 

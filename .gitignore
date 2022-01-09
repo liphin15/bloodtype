@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Additional directories
+./plots/
+./plot/
+./v1/plots/
+./v1/plot/
+./v2/plots/
+./v2/plot/

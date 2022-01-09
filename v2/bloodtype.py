@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 import random
 from person import Person
 import pickle
+import os
 
 import ipdb
 
@@ -47,6 +48,7 @@ class BloodType:
         'AB': 1
     }
     filename = 'model.pkl'
+    plots_dir = './plots/'
 
     def __init__(self,
                  startsize,
@@ -95,12 +97,16 @@ class BloodType:
         return self.birthRate * self.timestep
 
     def step(self, bt_mutation=None, rf_mutation=None, mutations=0):
+        self.timesteps += self.timestep
+        # Parallel(n_jobs=5)(p.updateAge(self.timestep) for p in self.population)
+
+        for p in self.population:
+            p.updateAge(self.timestep)
 
         self.killPersons()
         self.generateOffsprings(bt_mutation=bt_mutation,
                                 rf_mutation=rf_mutation,
                                 mutations=mutations)
-        self.timesteps += self.timestep
 
         self.logState()
         # update plots
@@ -194,6 +200,10 @@ class BloodType:
 
         self.states.append(currentstate)
 
+    def checkDirectory(self, dir):
+        if not os.path.isdir(dir):
+            os.makedirs(dir)
+
     def updateSize(self):
         x = np.arange(0, self.timesteps)
         y = [state[2] for state in self.states]
@@ -201,7 +211,7 @@ class BloodType:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-    def plotSize(self, cumulativ=False):
+    def plotSize(self, cumulativ=False, save=False):
         # x = np.arange(0, self.timesteps, step=self.timestep)
         x = np.array([state[0] for state in self.states])
         y = np.array([state[1] for state in self.states])
@@ -229,9 +239,13 @@ class BloodType:
                         alpha=1,
                         label='cumulative deaths' if cumulativ else 'total deaths')
         plt.legend()
-        plt.show()
+        if save:
+            self.checkDirectory(self.plots_dir)
+            plt.savefig(self.plots_dir+"populationsize.png")
+        else:
+            plt.show()
 
-    def plotBtPt(self, showRf=False, ratio=False):
+    def plotBtPt(self, showRf=False, ratio=False, save=False):
         # x = np.cumsum([state[0] for state in self.states])
         x = np.array([state[0] for state in self.states])
         if showRf:
@@ -265,9 +279,15 @@ class BloodType:
                                 label=p
                                 )
         plt.legend()
-        plt.show()
+        if save:
+            self.checkDirectory(self.plots_dir)
+            plt.savefig(self.plots_dir
+                        + "bloodtype{}{}.png".format('_rf' if showRf else '',
+                                                     '_ratio' if ratio else ''))
+        else:
+            plt.show()
 
-    def plotSex(self, ratio=False):
+    def plotSex(self, ratio=False, save=False):
         # x = np.cumsum([state[0] for state in self.states])
         x = np.array([state[0] for state in self.states])
         y = np.cumsum([state[4] for state in self.states], axis=1)
@@ -280,7 +300,12 @@ class BloodType:
         ax.fill_between(x, y[:, 1], y[:, 0],
                         color=default_colors[0], alpha=1, label='m')
         plt.legend()
-        plt.show()
+        if save:
+            self.checkDirectory(self.plots_dir)
+            plt.savefig(self.plots_dir
+                        + "sex_distribution{}.png".format('_ratio' if ratio else ''))
+        else:
+            plt.show()
 
     def printState(self):
         print("step: {:3.2f}".format(self.states[-1][0]),

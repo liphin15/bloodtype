@@ -50,8 +50,8 @@ model.printState()
 
 
 # model.plotSize()
-model.plotSize()
+model.plotSize(save=True)
 # model.plotSex(ratio=True)
-model.plotBtPt()
-model.plotBtPt(showRf=True)
+model.plotBtPt(save=True)
+model.plotBtPt(showRf=True, save=True)
 ipdb.set_trace()

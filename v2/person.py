@@ -15,6 +15,8 @@ class Person:
         self.bt_gt = bt_gt
         self.rf_gt = rf_gt
 
+        self.age = 0.0
+
         if sex in ['f', 'm']:
             self.sex = sex
         else:
@@ -62,6 +64,9 @@ class Person:
 
     def dies(self):
         return True if random() < self.fitness else False
+
+    def updateAge(self, time):
+        self.age = self.age + time
 
     def setFitness(self, value=None):
         fitness = 0.002

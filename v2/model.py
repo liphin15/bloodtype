@@ -6,23 +6,23 @@ from tqdm import tqdm
 import ipdb
 
 random.seed(1234)
-model = BloodType(100,
+model = BloodType(10000,
                   deathRate=0.01,
                   birthRate=0.015,
-                  timesteptype='y')
+                  timesteptype='w')
 
 # iterations
-for i in tqdm(range(1000)):
+for i in tqdm(range(10000)):
     model.step()
 model.printState()
 
-for i in tqdm(range(100)):
+for i in tqdm(range(1000)):
     model.step(bt_mutation='A', mutations=10)
     model.step(bt_mutation='B', mutations=10)
 
 model.printState()
 
-for i in tqdm(range(100)):
+for i in tqdm(range(1000)):
     model.step()
 model.printState()
 

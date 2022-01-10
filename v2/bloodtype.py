@@ -4,7 +4,7 @@ import random
 from person import Person
 import pickle
 import os
-from numba import njit, jit
+import numba as nb
 
 import ipdb
 
@@ -149,6 +149,7 @@ class BloodType:
         # update plots
         # self.updateSize()
 
+    # @nb.jit
     def getDeathlist(self):
         prop_bt = np.array([self.fitness[p.bt_pt] for p in self.population])
 
@@ -158,23 +159,50 @@ class BloodType:
         prop = prop_bt * prop_age
         # prop = prop / np.sum(prop)
 
-        cdf = np.cumsum(prop)
-        cdf = cdf / cdf[-1]
         self.deaths = round(self.populationsize * self.getDeathRate())
 
-        deathlist = [None] * self.deaths
-        for i in range(self.deaths):
-            while True:
-                pos = np.sum(cdf - random.random() < 0)
-                if pos not in deathlist:
-                    deathlist[i] = pos
-                    break
-        return deathlist
+        # @nb.jit(nopython=True, parallel=True)
+        def indexList(deaths, prop):
+            indexList = np.empty((deaths), dtype=np.int32)
+            # for i in nb.prange(deaths):
+            for i in range(deaths):
+                cdf = np.cumsum(prop)
+                cdf = cdf / cdf[-1]
+                indexList[i] = np.sum(cdf - random.random() < 0)
+                prop[indexList[i]] = 0
+            return np.flip(np.sort(indexList))
+        return indexList(self.deaths, prop)
+
+    # def getDeathlist(self):
+    #     prop_bt = np.array([self.fitness[p.bt_pt] for p in self.population])
+    #
+    #     prop_age = np.array([self.age_penalty[((self.age_penalty[:, 0] - p.age) <= 0).sum() - 1, 3]
+    #                          for p in self.population])
+    #
+    #     prop = prop_bt * prop_age
+    #     # prop = prop / np.sum(prop)
+    #
+    #     cdf = np.cumsum(prop)
+    #     cdf = cdf / cdf[-1]
+    #     self.deaths = round(self.populationsize * self.getDeathRate())
+    #
+    #     @nb.jit(nopython=True, parallel=True)
+    #     def indexList(deaths, cdf):
+    #         indexList = np.empty((deaths), dtype=np.int32)
+    #         for i in nb.prange(deaths):
+    #             while True:
+    #                 pos = np.sum(cdf - random.random() < 0)
+    #                 if pos not in indexList:
+    #                     indexList[i] = pos
+    #                     break
+    #         return np.flip(np.sort(indexList))
+    #     return indexList(self.deaths, cdf)
 
     def killPersons(self):
         deathlist = self.getDeathlist()
-        deathlist.sort(reverse=True)
-        if deathlist is not None:
+        # deathlist.sort(reverse=True)
+        # if deathlist is not None:
+        if deathlist.shape != (0,):
             for i in deathlist:
                 self.removePerson(i)
 
@@ -194,8 +222,10 @@ class BloodType:
         mutations = self.births if self.births < mutations else mutations
         # print(self.births, mutations)
 
+        parents = self.choseParents(self.births)
+
         for i in range(mutations):
-            i, j = self.choseParents()
+            i, j = parents[i]
             if (i, j) == (-1, -1):
                 break
             child = self.population[i].genMutatedOffspring(
@@ -206,33 +236,65 @@ class BloodType:
             self.populationsize = self.populationsize + 1
 
         for i in range(self.births - mutations):
-            i, j = self.choseParents()
+            i, j = parents[mutations+i]
             if (i, j) == (-1, -1):
                 break
             child = self.population[i].genOffspring(self.population[j])
             self.population.append(child)
             self.populationsize = self.populationsize + 1
 
-    def choseParents(self):
+    def choseParents(self, size=1):
         sexs = np.array([p.sex for p in self.population])
 
         prop_i = np.array([self.birth_distribution[(
             (self.birth_distribution[:, 0] - p.age) <= 0).sum() - 1, 3] for p in self.population])
         if (prop_i == 0).any():
-            return -1, -1
+            return np.full((size,2), -1)
         # print(prop_i, prop_i.max())
-        cdf_i = np.cumsum(prop_i)
-        cdf_i = cdf_i / cdf_i[-1]
-        i = np.sum(cdf_i - random.random() < 0)
 
-        prop_j = prop_i * (sexs != self.population[i].sex)
-        cdf_j = np.cumsum(prop_j)
-        cdf_j = cdf_j / cdf_j[-1]
-        j = np.sum(cdf_j - random.random() < 0)
+        # @nb.jit(nopython=True, parallel=True)
+        # @nb.njit
+        def indexList(sexs, prop_i, size=1):
+            ij = np.empty((size,2), dtype=np.int32)
+            # for i in nb.prange(size):
+            for i in range(size):
+                cdf_i = np.cumsum(prop_i)
+                cdf_i = cdf_i / cdf_i[-1]
+                ij[i,0] = np.sum(cdf_i - random.random() < 0)
+
+                prop_j = prop_i * (sexs != sexs[i])
+                cdf_j = np.cumsum(prop_j)
+                cdf_j = cdf_j / cdf_j[-1]
+                ij[i,1]  = np.sum(cdf_j - random.random() < 0)
+            return ij
+
         # ipdb.set_trace()
         # j = np.random.choice(np.arange(self.populationsize)[
         #                      sex_age[:, 0] != self.population[i].sex], 1)[0]
-        return (i, j)
+        return indexList(sexs, prop_i, size)
+
+    # def choseParent(self):
+    #     sexs = np.array([p.sex for p in self.population])
+    #
+    #     prop_i = np.array([self.birth_distribution[(
+    #         (self.birth_distribution[:, 0] - p.age) <= 0).sum() - 1, 3] for p in self.population])
+    #     if (prop_i == 0).any():
+    #         return np.full((size,2), -1)
+    #     # print(prop_i, prop_i.max())
+    #
+    #     cdf_i = np.cumsum(prop_i)
+    #     cdf_i = cdf_i / cdf_i[-1]
+    #     i = np.sum(cdf_i - random.random() < 0)
+    #
+    #     prop_j = prop_i * (sexs != sexs[i])
+    #     cdf_j = np.cumsum(prop_j)
+    #     cdf_j = cdf_j / cdf_j[-1]
+    #     j = np.sum(cdf_j - random.random() < 0)
+    #
+    #     # ipdb.set_trace()
+    #     # j = np.random.choice(np.arange(self.populationsize)[
+    #     #                      sex_age[:, 0] != self.population[i].sex], 1)[0]
+    #     return (i,j)
 
     def logState(self):
         bt_ptFromPopulation = [p.bt_pt for p in self.population]

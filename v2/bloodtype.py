@@ -5,6 +5,7 @@ from person import Person
 import pickle
 import os
 import numba as nb
+import math
 
 import ipdb
 
@@ -159,13 +160,13 @@ class BloodType:
         prop = prop_bt * prop_age
         # prop = prop / np.sum(prop)
 
-        self.deaths = round(self.populationsize * self.getDeathRate())
+        self.deaths = math.ceil(self.populationsize * self.getDeathRate())
 
         # @nb.jit(nopython=True, parallel=True)
         def indexList(deaths, prop):
             indexList = np.empty((deaths), dtype=np.int32)
-            # for i in nb.prange(deaths):
-            for i in range(deaths):
+            for i in nb.prange(deaths):
+                # for i in range(deaths):
                 cdf = np.cumsum(prop)
                 cdf = cdf / cdf[-1]
                 indexList[i] = np.sum(cdf - random.random() < 0)
@@ -214,7 +215,7 @@ class BloodType:
                            bt_mutation=None,
                            rf_mutation=None,
                            mutations=0):
-        self.births = int(np.round(self.populationsize * self.getBirthRate()))
+        self.births = math.ceil(self.populationsize * self.getBirthRate())
         if bt_mutation not in self.bt_pt and \
                 rf_mutation not in self.rf_pt:
             mutations = 0
@@ -249,23 +250,23 @@ class BloodType:
         prop_i = np.array([self.birth_distribution[(
             (self.birth_distribution[:, 0] - p.age) <= 0).sum() - 1, 3] for p in self.population])
         if (prop_i == 0).any():
-            return np.full((size,2), -1)
+            return np.full((size, 2), -1)
         # print(prop_i, prop_i.max())
 
         # @nb.jit(nopython=True, parallel=True)
         # @nb.njit
         def indexList(sexs, prop_i, size=1):
-            ij = np.empty((size,2), dtype=np.int32)
-            # for i in nb.prange(size):
-            for i in range(size):
+            ij = np.empty((size, 2), dtype=np.int32)
+            for i in nb.prange(size):
+                # for i in range(size):
                 cdf_i = np.cumsum(prop_i)
                 cdf_i = cdf_i / cdf_i[-1]
-                ij[i,0] = np.sum(cdf_i - random.random() < 0)
+                ij[i, 0] = np.sum(cdf_i - random.random() < 0)
 
                 prop_j = prop_i * (sexs != sexs[i])
                 cdf_j = np.cumsum(prop_j)
                 cdf_j = cdf_j / cdf_j[-1]
-                ij[i,1]  = np.sum(cdf_j - random.random() < 0)
+                ij[i, 1] = np.sum(cdf_j - random.random() < 0)
             return ij
 
         # ipdb.set_trace()
@@ -361,6 +362,9 @@ class BloodType:
                         alpha=1,
                         label='cumulative deaths' if cumulativ else 'total deaths')
         plt.legend()
+        plt.xlabel("years")
+        plt.ylabel("")
+        plt.tight_layout()
         if save:
             self.checkDirectory(self.plots_dir)
             plt.savefig(self.plots_dir + "populationsize.png")
@@ -402,6 +406,9 @@ class BloodType:
                                 label=p
                                 )
         plt.legend()
+        plt.xlabel("years")
+        plt.ylabel("")
+        plt.tight_layout()
         if save:
             self.checkDirectory(self.plots_dir)
             plt.savefig(self.plots_dir
@@ -424,6 +431,9 @@ class BloodType:
         ax.fill_between(x, y[:, 1], y[:, 0],
                         color=default_colors[0], alpha=1, label='m')
         plt.legend()
+        plt.xlabel("years")
+        plt.ylabel("")
+        plt.tight_layout()
         if save:
             self.checkDirectory(self.plots_dir)
             plt.savefig(self.plots_dir
@@ -451,6 +461,9 @@ class BloodType:
                             label='{}-{}'.format(int(self.age_penalty[i, 0]),
                                                  int(self.age_penalty[i, 1])))
         plt.legend()
+        plt.xlabel("years")
+        plt.ylabel("")
+        plt.tight_layout()
         if save:
             self.checkDirectory(self.plots_dir)
             plt.savefig(self.plots_dir

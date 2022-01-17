@@ -105,7 +105,7 @@ class BloodType:
         # self.fig, self.ax = plt.subplots(nrows=1, ncols=2)
 
         self.populationsize = startsize
-        self.population = self.gen_population(age=20.0,
+        self.population = self.gen_population(age='rand',
                                               size=self.populationsize)
         self.filename = filename
 
@@ -239,7 +239,7 @@ class BloodType:
         prop_age = np.array([self.age_penalty[((self.age_penalty[:, 0] - age) <= 0).sum() - 1, 3]
                              for age in self.population['age']])
 
-        prop = prop_bt * prop_age
+        prop = np.array(prop_bt * prop_age)
         # prop = prop / np.sum(prop)
 
         self.deaths = self.populationsize * self.get_death_rate()
@@ -249,7 +249,6 @@ class BloodType:
             self.deaths = round(self.deaths)
 
         # @nb.jit(nopython=True, parallel=True)
-
         def indexlist(deaths, prop):
             indexList = np.empty((deaths), dtype=np.int32)
             for i in nb.prange(deaths):
@@ -369,30 +368,50 @@ class BloodType:
             return np.full((size, 2), -1)
         # print(prop_i, prop_i.max())
 
-        # @nb.jit(nopython=True, parallel=True)
         # @nb.njit
+        # @nb.jit(nopython=True, parallel=True)
         def indexlist(sexs, prop_i, size=1):
-            ij = np.empty((size, 2), dtype=np.int32)
+            ij = np.empty((size, 2), dtype=np.int64)
+            cdf_i = np.cumsum(prop_i)
+            cdf_i = cdf_i / cdf_i[-1]
             for i in nb.prange(size):
-                # for i in range(size):
-                cdf_i = np.cumsum(prop_i)
-                cdf_i = cdf_i / cdf_i[-1]
                 ij[i, 0] = np.sum(cdf_i - random.random() < 0)
 
-                try:
-                    prop_j = prop_i * (sexs != sexs[i])
-                except Exception:
-                    ipdb.set_trace()
+                prop_j = prop_i * (sexs != sexs[i])
                 cdf_j = np.cumsum(prop_j)
                 cdf_j = cdf_j / cdf_j[-1]
                 ij[i, 1] = np.sum(cdf_j - random.random() < 0)
             return ij
 
+        # @nb.guvectorize([(nb.float64[:], nb.int64[:])], '(n)->(n)')
+        # def parent1_id(cdf, pid):
+        #     for i in nb.range(pid.shape[0]):
+        #         pid[i] = np.sum(cdf - random.random() < 0)
+        #
+        # cdf_i = np.cumsum(prop_i)
+        # i_pid = np.empty((size), dtype=np.int64)
+        # parent1_id(cdf_i, i_pid)
+
+        # @nb.guvectorize([(nb.float64[:], nb.int64[:])], '()->()', nopython=True)
+        # def parent1_id(cdf, pid):
+        #     for i in range(pid.shape[0]):
+        #         pid[i] = np.sum(cdf - random.random() < 0)
+        #
+        # cdf_i = np.cumsum(prop_i)
+        # i_pid = np.empty((size), dtype=np.int64)
+        # parent1_id(cdf_i, i_pid)
+        #
         # ipdb.set_trace()
         # j = np.random.choice(np.arange(self.populationsize)[
         #                      sex_age[:, 0] != self.population[i].sex], 1)[0]
+
+        # try:
+        index_list = indexlist(sexs, prop_i, size)
+        # except Exception:
+        #     ipdb.set_trace()
+
         return [[self.population.index[i], self.population.index[j]]
-                for i, j in indexlist(sexs, prop_i, size)]
+                for i, j in index_list]
 
     # def choseParent(self):
     #     sexs = np.array([p.sex for p in self.population])

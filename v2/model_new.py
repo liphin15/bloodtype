@@ -6,12 +6,17 @@ from tqdm import tqdm, trange
 import ipdb
 
 random.seed(1234)
-model = BloodType(10000,
+model = BloodType(1000,
                   deathRate=0.01,
                   birthRate=0.1,
-                  timesteptype='w')
+                  timesteptype='m')
 
-ipdb.set_trace()
+# model.step()
+# ipdb.set_trace()
+# model.step(bt_mutation='A', mutations=10)
+# model.step(bt_mutation='A', mutations=10)
+# ipdb.set_trace()
+
 
 # iterations
 t = trange(1000)
@@ -19,7 +24,7 @@ for i in t:
     t.set_description("Population Size {}".format(model.populationsize))
     t.refresh()
     model.step()
-model.printState()
+model.print_state()
 
 t = trange(1000)
 for i in t:
@@ -28,14 +33,14 @@ for i in t:
     model.step(bt_mutation='A', mutations=10)
     model.step(bt_mutation='B', mutations=10)
 
-model.printState()
+model.print_state()
 
-t = trange(100000)
-for i in t:
-    t.set_description("Population Size {}".format(model.populationsize))
-    t.refresh()
-    model.step()
-model.printState()
+# t = trange(1000000)
+# for i in t:
+#     t.set_description("Population Size {}".format(model.populationsize))
+#     t.refresh()
+#     model.step()
+# model.print_state()
 
 # model.setFitness(fitness={
 #         'O': 100,
@@ -43,12 +48,12 @@ model.printState()
 #         'B': 5,
 #         'AB': 20
 #     })
-# model.setDeathRate(value=0.8)
+# model.set_death_rate(value=0.8)
 #
 # for i in tqdm(range(36)):
 #     model.step()
 # model.printState()
-
+#
 # model.setFitness(fitness={
 #         'O': 1,
 #         'A': 1,
@@ -56,8 +61,8 @@ model.printState()
 #         'AB': 1
 #     })
 # model.setDeathRate(value=0.01)
-
-
+#
+#
 # t = trange(1000)
 # for i in t:
 #     t.set_description("Population Size {}".format(model.populationsize))
@@ -67,9 +72,9 @@ model.printState()
 
 
 # model.plotSize()
-model.plotSize(save=True)
-# model.plotSex(ratio=True)
-model.plotBtPt(save=True)
-model.plotBtPt(showRf=True, save=True)
-model.plotAgeGroups(ratio=False, save=True)
+model.plot_size(save=True)
+model.plot_sex(ratio=True, save=True)
+model.plot_bt_pt(save=True)
+model.plot_bt_pt(showRf=True, save=True)
+model.plot_age_groups(ratio=False, save=True)
 # ipdb.set_trace()
